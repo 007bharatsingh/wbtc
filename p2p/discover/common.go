@@ -52,7 +52,7 @@ func ParseEthFilter(chain string) (NodeFilterFunc, error) {
 	var filter forkid.Filter
 	switch chain {
 	case "bsc":
-		filter = forkid.NewStaticFilter(params.BSCChainConfig, core.DefaultBSCGenesisBlock().ToBlock())
+		filter = forkid.NewStaticFilter(params.WBTCChainConfig, core.DefaultBSCGenesisBlock().ToBlock())
 	case "chapel":
 		filter = forkid.NewStaticFilter(params.ChapelChainConfig, core.DefaultChapelGenesisBlock().ToBlock())
 	default:
