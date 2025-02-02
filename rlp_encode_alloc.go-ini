@@ -1,0 +1,108 @@
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"math/big"
+	"sort"
+	"strings"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/rlp"
+)
+
+// Account represents an Ethereum account allocation
+type Account struct {
+	Balance string `json:"balance"`
+}
+
+// Genesis represents the structure of genesis.json
+type Genesis struct {
+	Alloc map[string]Account `json:"alloc"`
+}
+
+// AccountRLP represents the RLP structure for an Ethereum genesis account
+type AccountRLP struct {
+	Nonce    uint64
+	Balance  *big.Int
+	CodeHash []byte
+}
+
+func main() {
+	// Read the genesis.json file
+	fileData, err := ioutil.ReadFile("genesis.json")
+	if err != nil {
+		log.Fatalf("Error reading genesis.json: %v", err)
+	}
+
+	// Parse JSON
+	var genesis Genesis
+	err = json.Unmarshal(fileData, &genesis)
+	if err != nil {
+		log.Fatalf("Error parsing JSON: %v", err)
+	}
+
+	// Convert alloc map into a sorted slice
+	var allocList []struct {
+		Address common.Address
+		Account AccountRLP
+	}
+
+	for address, account := range genesis.Alloc {
+		// Convert balance string to *big.Int
+		balance := new(big.Int)
+		_, success := balance.SetString(account.Balance, 10) // Base 10 conversion
+		if !success {
+			log.Fatalf("Failed to convert balance %s for address %s", account.Balance, address)
+		}
+
+		// Convert hex address string to common.Address
+		addr := common.HexToAddress(address)
+
+		// Define Ethereum RLP account format
+		accountData := AccountRLP{
+			Nonce:    0,                          // Genesis accounts have nonce 0
+			Balance:  balance,                    // Correct big.Int balance
+			CodeHash: common.Hash{}.Bytes(),      // Empty code
+		}
+
+		// Append to list
+		allocList = append(allocList, struct {
+			Address common.Address
+			Account AccountRLP
+		}{Address: addr, Account: accountData})
+	}
+
+	// Sort the list by address to ensure deterministic output
+	sort.Slice(allocList, func(i, j int) bool {
+		return bytes.Compare(allocList[i].Address.Bytes(), allocList[j].Address.Bytes()) < 0
+	})
+
+	// RLP Encode the sorted alloc list
+	var encodedAlloc bytes.Buffer
+	err = rlp.Encode(&encodedAlloc, allocList)
+	if err != nil {
+		log.Fatalf("RLP Encoding failed: %v", err)
+	}
+
+	// Convert bytes to Go-compatible string (hex escapes)
+	encodedBytes := encodedAlloc.Bytes()
+	var goByteString strings.Builder
+	goByteString.WriteString(`const mainnetAllocData = "`)
+	for _, b := range encodedBytes {
+		goByteString.WriteString(fmt.Sprintf("\\x%02x", b))
+	}
+	goByteString.WriteString(`"`)
+
+	// Save to file
+	outputFile := "encoded_genesis_alloc.txt"
+	err = ioutil.WriteFile(outputFile, []byte(goByteString.String()), 0644)
+	if err != nil {
+		log.Fatalf("Error writing to file: %v", err)
+	}
+
+	fmt.Printf("✅ RLP Encoded Go Byte String saved to %s\n", outputFile)
+}
