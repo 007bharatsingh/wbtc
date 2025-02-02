@@ -100,6 +100,7 @@ type Config struct {
 	SnapDiscoveryURLs  []string
 	TrustDiscoveryURLs []string
 	BscDiscoveryURLs   []string
+	WBTCDiscoveryURLs   []string
 
 	// State options.
 	NoPruning  bool // Whether to disable pruning and flush everything to disk

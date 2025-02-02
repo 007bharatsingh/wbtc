@@ -173,7 +173,7 @@ var (
 	}
 	NetworkIdFlag = &cli.Uint64Flag{
 		Name:     "networkid",
-		Usage:    "Explicitly set network id (integer)(For testnets: use --chapel instead)",
+		Usage:    "Explicitly set network id (integer)(For testnets: use --WBTCT instead)",
 		Value:    ethconfig.Defaults.NetworkId,
 		Category: flags.EthCategory,
 	}
@@ -182,7 +182,17 @@ var (
 		Usage:    "BSC mainnet",
 		Category: flags.EthCategory,
 	}
-	ChapelFlag = &cli.BoolFlag{
+	WBTCMainnetFlag = &cli.BoolFlag{
+		Name:     "mainnet",
+		Usage:    "WBTC mainnet",
+		Category: flags.EthCategory,
+	}
+	WBTCTFlag = &cli.BoolFlag{
+		Name:     "wbtct",
+		Usage:    "wbtct network: pre-configured Proof-of-Stake-Authority WBTCT test network",
+		Category: flags.EthCategory,
+	}
+    ChapelFlag = &cli.BoolFlag{
 		Name:     "chapel",
 		Usage:    "Chapel network: pre-configured Proof-of-Stake-Authority BSC test network",
 		Category: flags.EthCategory,
@@ -1218,10 +1228,10 @@ Please note that --` + MetricsHTTPFlag.Name + ` must be set to start the server.
 var (
 	// TestnetFlags is the flag group of all built-in supported testnets.
 	TestnetFlags = []cli.Flag{
-		ChapelFlag,
+		WBTCTFlag,
 	}
 	// NetworkFlags is the flag group of all built-in supported networks.
-	NetworkFlags = append([]cli.Flag{BSCMainnetFlag}, TestnetFlags...)
+	NetworkFlags = append([]cli.Flag{WBTCMainnetFlag}, TestnetFlags...)
 
 	// DatabaseFlags is the flag group of all database flags.
 	DatabaseFlags = []cli.Flag{
@@ -1951,7 +1961,7 @@ func CheckExclusive(ctx *cli.Context, args ...interface{}) {
 // SetEthConfig applies eth-related command line flags to the config.
 func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	// Avoid conflicting network flags
-	CheckExclusive(ctx, BSCMainnetFlag, DeveloperFlag)
+	CheckExclusive(ctx, WBTCMainnetFlag, DeveloperFlag)
 	CheckExclusive(ctx, DeveloperFlag, ExternalSignerFlag) // Can't use both ephemeral unlocked and external signer
 
 	// Set configurations from CLI flags
@@ -2147,7 +2157,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		cfg.RPCTxFeeCap = ctx.Float64(RPCGlobalTxFeeCapFlag.Name)
 	}
 	if ctx.IsSet(NoDiscoverFlag.Name) {
-		cfg.EthDiscoveryURLs, cfg.SnapDiscoveryURLs, cfg.TrustDiscoveryURLs, cfg.BscDiscoveryURLs = []string{}, []string{}, []string{}, []string{}
+		cfg.EthDiscoveryURLs, cfg.SnapDiscoveryURLs, cfg.TrustDiscoveryURLs, cfg.BscDiscoveryURLs, cfg.WBTCDiscoveryURLs = []string{}, []string{}, []string{}, []string{}, []string{}
 	} else if ctx.IsSet(DNSDiscoveryFlag.Name) {
 		urls := ctx.String(DNSDiscoveryFlag.Name)
 		if urls == "" {
@@ -2164,6 +2174,18 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 		}
 		cfg.Genesis = core.DefaultBSCGenesisBlock()
 		SetDNSDiscoveryDefaults(cfg, params.BSCGenesisHash)
+	case ctx.Bool(WBTCMainnetFlag.Name):
+		if !ctx.IsSet(NetworkIdFlag.Name) {
+			cfg.NetworkId = 88
+		}
+		cfg.Genesis = core.DefaultWBTCGenesisBlock()
+		SetDNSDiscoveryDefaults(cfg, params.WBTCGenesisHash)
+	case ctx.Bool(WBTCTFlag.Name) || cfg.NetworkId == 89:
+		if !ctx.IsSet(NetworkIdFlag.Name) {
+			cfg.NetworkId = 89
+		}
+		cfg.Genesis = core.DefaultWBTCTGenesisBlock()
+		SetDNSDiscoveryDefaults(cfg, params.WBTCTGenesisHash)
 	case ctx.Bool(ChapelFlag.Name) || cfg.NetworkId == 97:
 		if !ctx.IsSet(NetworkIdFlag.Name) {
 			cfg.NetworkId = 97
@@ -2298,6 +2320,7 @@ func SetDNSDiscoveryDefaults(cfg *ethconfig.Config, genesis common.Hash) {
 		cfg.SnapDiscoveryURLs = cfg.EthDiscoveryURLs
 		cfg.TrustDiscoveryURLs = cfg.EthDiscoveryURLs
 		cfg.BscDiscoveryURLs = cfg.EthDiscoveryURLs
+		cfg.WBTCDiscoveryURLs = cfg.EthDiscoveryURLs
 	}
 }
 
@@ -2417,7 +2440,7 @@ func parseNodeType() string {
 		version = append(version, git.Date)
 	}
 	arch := []string{runtime.GOOS, runtime.GOARCH}
-	infos := []string{"BSC", strings.Join(version, "-"), strings.Join(arch, "-"), runtime.Version()}
+	infos := []string{"WBTC", strings.Join(version, "-"), strings.Join(arch, "-"), runtime.Version()}
 	return strings.Join(infos, "/")
 }
 
@@ -2632,8 +2655,12 @@ func DialRPCWithHeaders(endpoint string, headers []string) (*rpc.Client, error) 
 func MakeGenesis(ctx *cli.Context) *core.Genesis {
 	var genesis *core.Genesis
 	switch {
+	case ctx.Bool(WBTCMainnetFlag.Name):
+		genesis = core.DefaultWBTCGenesisBlock()
 	case ctx.Bool(BSCMainnetFlag.Name):
 		genesis = core.DefaultBSCGenesisBlock()
+	case ctx.Bool(WBTCTFlag.Name):
+		genesis = core.DefaultWBTCTGenesisBlock()
 	case ctx.Bool(ChapelFlag.Name):
 		genesis = core.DefaultChapelGenesisBlock()
 	case ctx.Bool(DeveloperFlag.Name):

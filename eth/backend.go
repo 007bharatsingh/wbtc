@@ -615,6 +615,15 @@ func (s *Ethereum) setupDiscovery() error {
 		s.discmix.AddSource(iter)
 	}
 
+	// Add WBTC nodes from DNS.
+	if len(s.config.WBTCDiscoveryURLs) > 0 {
+		iter, err := dnsclient.NewIterator(s.config.WBTCDiscoveryURLs...)
+		if err != nil {
+			return err
+		}
+		s.discmix.AddSource(iter)
+	}
+    
 	// Add bsc nodes from DNS.
 	if len(s.config.BscDiscoveryURLs) > 0 {
 		iter, err := dnsclient.NewIterator(s.config.BscDiscoveryURLs...)

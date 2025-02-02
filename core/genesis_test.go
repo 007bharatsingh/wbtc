@@ -106,6 +106,17 @@ func testSetupGenesis(t *testing.T, scheme string) {
 			wantHash:   params.ChapelGenesisHash,
 			wantConfig: params.ChapelChainConfig,
 		},
+        {
+			name: "custom block in DB, genesis == WBTC",
+			fn: func(db ethdb.Database) (*params.ChainConfig, common.Hash, error) {
+				tdb := triedb.NewDatabase(db, newDbConfig(scheme))
+				customg.Commit(db, tdb)
+				return SetupGenesisBlock(db, tdb, DefaultWBTCTGenesisBlock())
+			},
+			wantErr:    &GenesisMismatchError{Stored: customghash, New: params.WBTCTGenesisHash},
+			wantHash:   params.WBTCTGenesisHash,
+			wantConfig: params.WBTCTChainConfig,
+		},
 		{
 			name: "compatible config in DB",
 			fn: func(db ethdb.Database) (*params.ChainConfig, common.Hash, error) {

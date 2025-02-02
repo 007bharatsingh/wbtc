@@ -51,8 +51,12 @@ type NodeFilterFunc func(*enr.Record) bool
 func ParseEthFilter(chain string) (NodeFilterFunc, error) {
 	var filter forkid.Filter
 	switch chain {
+	case "wbtc":
+		filter = forkid.NewStaticFilter(params.WBTCChainConfig, core.DefaultWBTCGenesisBlock().ToBlock())
+	case "wbtct":
+		filter = forkid.NewStaticFilter(params.WBTCTChainConfig, core.DefaultWBTCTGenesisBlock().ToBlock())
 	case "bsc":
-		filter = forkid.NewStaticFilter(params.WBTCChainConfig, core.DefaultBSCGenesisBlock().ToBlock())
+		filter = forkid.NewStaticFilter(params.BSCChainConfig, core.DefaultBSCGenesisBlock().ToBlock())
 	case "chapel":
 		filter = forkid.NewStaticFilter(params.ChapelChainConfig, core.DefaultChapelGenesisBlock().ToBlock())
 	default:

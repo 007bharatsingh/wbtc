@@ -24,6 +24,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		SnapDiscoveryURLs       []string
 		TrustDiscoveryURLs      []string
 		BscDiscoveryURLs        []string
+		WBTCDiscoveryURLs       []string
 		NoPruning               bool
 		NoPrefetch              bool
 		DirectBroadcast         bool
