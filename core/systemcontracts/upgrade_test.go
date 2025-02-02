@@ -30,7 +30,7 @@ func TestAllCodesHash(t *testing.T) {
 
 	allCodes := make([]byte, 0, 10_000_000)
 	for _, hardfork := range upgradesList {
-		for _, network := range []string{mainNet, chapelNet} {
+		for _, network := range []string{mainNet, WBTCTNet} {
 			allCodes = append(allCodes, []byte(network)...)
 			if hardfork[network] != nil {
 				for _, addressConfig := range hardfork[network].Configs {
